@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Display &amp; brightness</title>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Display%20%26%20brightness%22%2C%22short_name%22%3A%22Display%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23000%22%2C%22theme_color%22%3A%22%23000%22%7D">
+<style>
+*,*::before,*::after{
+  margin:0;padding:0;box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+}
+html,body{
+  width:100vw;height:100vh;
+  overflow:hidden;
+  background:#000;color:#fff;
+  font-family:-apple-system,'Roboto','Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── BLACK COVER ── */
+#black-cover{
+  position:fixed;inset:0;
+  background:#000;
+  z-index:10000;
+  display:none;
+}
+
+/* ── PAGE LAYOUT ── */
+.page{
+  width:100%;height:100vh;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;
+  gap:6px;
+  padding:20px 20px 14px;
+  flex-shrink:0;
+}
+.back-btn{
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  padding:4px 10px 4px 0;
+  flex-shrink:0;
+}
+.back-btn svg{
+  width:26px;height:26px;
+  stroke:#fff;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round;
+  fill:none;
+}
+.header-title{
+  font-size:20px;font-weight:700;
+  letter-spacing:0.1px;color:#fff;
+}
+
+/* ── SCROLL AREA ── */
+.content{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+.content::-webkit-scrollbar{display:none;}
+
+/* ══════════════════════════════
+   THEME PREVIEW CARDS
+══════════════════════════════ */
+.theme-row{
+  display:flex;justify-content:center;
+  gap:36px;
+  padding:6px 24px 28px;
+}
+.theme-opt{
+  display:flex;flex-direction:column;
+  align-items:center;gap:10px;
+  cursor:pointer;
+}
+
+/* Phone shell */
+.phone-shell{
+  width:92px;height:148px;
+  border-radius:18px;
+  border:2.5px solid #2e2e2e;
+  overflow:hidden;
+  position:relative;
+  flex-shrink:0;
+}
+.phone-shell.light-shell{
+  background:linear-gradient(175deg,#c5ddf5 0%,#daeaf8 30%,#eef5fb 55%,#f7f3ed 75%,#ede5d8 100%);
+  border-color:#3a4a5a;
+}
+.phone-shell.dark-shell{
+  background:linear-gradient(175deg,#1e2f42 0%,#152236 30%,#0c1828 55%,#091220 75%,#111e30 100%);
+  border-color:#2a4060;
+}
+
+/* Notch */
+.notch{
+  position:absolute;top:0;left:50%;
+  transform:translateX(-50%);
+  width:26px;height:6px;
+  background:rgba(0,0,0,0.3);
+  border-radius:0 0 6px 6px;
+}
+
+/* Clock inside phone */
+.mock-clock{
+  position:absolute;top:14px;left:0;right:0;
+  text-align:center;
+  font-size:18px;font-weight:700;
+  letter-spacing:1px;
+}
+.light-shell .mock-clock{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.35);}
+.dark-shell  .mock-clock{color:#e8eef5;}
+
+/* UI blocks inside phone */
+.mock-ui{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:68px;
+  display:flex;flex-direction:column;
+  justify-content:flex-end;
+  padding:8px 8px 6px;
+  gap:5px;
+}
+.light-shell .mock-ui{background:rgba(255,255,255,0.82);}
+.dark-shell  .mock-ui{background:rgba(10,18,32,0.90);}
+
+.mock-bar-l{height:5px;border-radius:3px;}
+.light-shell .mock-bar-l:nth-child(1){background:rgba(80,120,180,.45);width:70%;}
+.light-shell .mock-bar-l:nth-child(2){background:rgba(80,120,180,.25);width:50%;}
+.light-shell .mock-bar-l:nth-child(3){background:rgba(80,120,180,.15);width:60%;}
+.dark-shell  .mock-bar-l:nth-child(1){background:rgba(120,160,220,.40);width:70%;}
+.dark-shell  .mock-bar-l:nth-child(2){background:rgba(120,160,220,.22);width:50%;}
+.dark-shell  .mock-bar-l:nth-child(3){background:rgba(120,160,220,.13);width:60%;}
+
+/* Label + radio */
+.theme-lbl{
+  font-size:13.5px;font-weight:400;color:#777;
+  margin-top:0;
+}
+.theme-lbl.active{color:#fff;font-weight:600;}
+.theme-dot{
+  width:23px;height:23px;border-radius:50%;
+  border:2px solid #4a4a4a;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s;
+}
+.theme-dot.sel{border-color:#4CAF50;}
+.theme-dot.sel::after{
+  content:'';width:13px;height:13px;
+  border-radius:50%;background:#4CAF50;
+}
+
+/* ── DIVIDERS / GAPS ── */
+.div{height:1px;background:#1e1e1e;}
+.div.mx{margin:0 20px;}
+.gap{height:8px;background:#0a0a0a;}
+
+/* ── ROWS ── */
+.row{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding:18px 20px;cursor:pointer;
+  transition:background .1s;
+}
+.row:active{background:#0d0d0d;}
+.row-left{flex:1;min-width:0;}
+.row-title{font-size:15.5px;font-weight:500;color:#fff;}
+.row-sub{font-size:12px;color:#545454;margin-top:3px;line-height:1.45;}
+.row-arrow{color:#3a3a3a;font-size:20px;padding-left:10px;}
+
+/* ── TOGGLE ── */
+.tog{
+  width:52px;height:30px;border-radius:15px;
+  background:#3c3c3c;position:relative;
+  transition:background .28s;cursor:pointer;flex-shrink:0;
+}
+.tog.on{background:#4CAF50;}
+.tog::after{
+  content:'';position:absolute;
+  width:24px;height:24px;border-radius:50%;
+  background:#fff;top:3px;left:3px;
+  transition:transform .28s;
+  box-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+.tog.on::after{transform:translateX(22px);}
+
+/* ── BRIGHTNESS ROW ── */
+.bri-row{
+  display:flex;align-items:center;
+  gap:14px;padding:20px 20px;
+}
+.sun{font-size:16px;color:#565656;}
+.sun.big{font-size:22px;color:#909090;}
+.track{
+  flex:1;position:relative;
+  height:4px;background:#252525;border-radius:2px;
+}
+.fill{
+  position:absolute;left:0;top:0;
+  height:100%;background:#fff;border-radius:2px;
+  pointer-events:none;width:57%;
+}
+.thumb{
+  position:absolute;
+  width:22px;height:22px;border-radius:50%;
+  background:#fff;top:50%;left:57%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 1px 5px rgba(0,0,0,.6);
+  pointer-events:none;
+}
+input[type=range]{
+  position:absolute;width:100%;height:34px;
+  opacity:0;cursor:pointer;
+  top:50%;transform:translateY(-50%);margin:0;
+}
+
+.pad{height:24px;}
+</style>
+</head>
+<body>
+
+<div id="black-cover"></div>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="back-btn">
+      <svg viewBox="0 0 24 24">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </div>
+    <div class="header-title">Display &amp; brightness</div>
+  </div>
+
+  <div class="content">
+
+    <!-- THEME PICKER -->
+    <div class="theme-row">
+
+      <!-- LIGHT -->
+      <div class="theme-opt" onclick="setTheme('light')">
+        <div class="phone-shell light-shell">
+          <div class="notch"></div>
+          <div class="mock-clock">19:30</div>
+          <div class="mock-ui">
+            <div class="mock-bar-l"></div>
+            <div class="mock-bar-l"></div>
+            <div class="mock-bar-l"></div>
+          </div>
+        </div>
+        <div class="theme-lbl" id="lbl-light">Light</div>
+        <div class="theme-dot" id="dot-light"></div>
+      </div>
+
+      <!-- DARK -->
+      <div class="theme-opt" onclick="setTheme('dark')">
+        <div class="phone-shell dark-shell">
+          <div class="notch"></div>
+          <div class="mock-clock">19:30</div>
+          <div class="mock-ui">
+            <div class="mock-bar-l"></div>
+            <div class="mock-bar-l"></div>
+            <div class="mock-bar-l"></div>
+          </div>
+        </div>
+        <div class="theme-lbl active" id="lbl-dark">Dark</div>
+        <div class="theme-dot sel" id="dot-dark"></div>
+      </div>
+
+    </div>
+
+    <div class="div mx"></div>
+
+    <!-- PRIVACY SCREEN -->
+    <div class="row" onclick="togglePrivacy()">
+      <div class="row-title">Privacy Screen</div>
+      <div class="tog" id="tog-privacy"></div>
+    </div>
+
+    <div class="div mx"></div>
+
+    <!-- DARK MODE SETTINGS -->
+    <div class="row">
+      <div class="row-left">
+        <div class="row-title">Dark mode settings</div>
+        <div class="row-sub">Style, Reduce contrast in low light conditions, and<br>Dark mode for third-party apps</div>
+      </div>
+      <div class="row-arrow">&#8250;</div>
+    </div>
+
+    <div class="div"></div>
+    <div class="gap"></div>
+    <div class="div"></div>
+
+    <!-- BRIGHTNESS SLIDER -->
+    <div class="bri-row">
+      <span class="sun">&#9788;</span>
+      <div class="track">
+        <div class="fill"  id="bri-fill"></div>
+        <div class="thumb" id="bri-thumb"></div>
+        <input type="range" min="0" max="100" value="57" oninput="setBri(this.value)">
+      </div>
+      <span class="sun big">&#9728;</span>
+    </div>
+
+    <div class="div"></div>
+
+    <!-- AUTO BRIGHTNESS -->
+    <div class="row" onclick="this.querySelector('.tog').classList.toggle('on')">
+      <div class="row-title">Auto brightness</div>
+      <div class="tog"></div>
+    </div>
+
+    <div class="div"></div>
+    <div class="gap"></div>
+    <div class="div"></div>
+
+    <!-- EYE COMFORT -->
+    <div class="row" onclick="this.querySelector('.tog').classList.toggle('on')">
+      <div class="row-title">Eye comfort</div>
+      <div class="tog"></div>
+    </div>
+
+    <div class="div mx"></div>
+
+    <!-- AUTO ROTATE -->
+    <div class="row" onclick="this.querySelector('.tog').classList.toggle('on')">
+      <div class="row-title">Auto rotate</div>
+      <div class="tog"></div>
+    </div>
+
+    <div class="div"></div>
+    <div class="pad"></div>
+
+  </div><!-- /content -->
+</div><!-- /page -->
+
+<script>
+var privOn=false,sensReady=false;
+var cover=document.getElementById('black-cover');
+
+function onTilt(e){
+  if(!privOn||!sensReady)return;
+  var g=e.gamma;
+  if(g===null||g===undefined)return;
+  cover.style.display=Math.abs(g)>30?'block':'none';
+}
+
+function startSensor(){
+  window.addEventListener('deviceorientation',onTilt,true);
+  sensReady=true;
+}
+
+function togglePrivacy(){
+  privOn=!privOn;
+  var t=document.getElementById('tog-privacy');
+  if(privOn){
+    t.classList.add('on');
+    if(typeof DeviceOrientationEvent!=='undefined'&&
+       typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission()
+        .then(function(r){
+          if(r==='granted'){startSensor();}
+          else{privOn=false;t.classList.remove('on');}
+        })
+        .catch(function(){privOn=false;t.classList.remove('on');});
+    }else{
+      startSensor();
+    }
+  }else{
+    t.classList.remove('on');
+    sensReady=false;
+    cover.style.display='none';
+  }
+}
+
+function setTheme(th){
+  ['dark','light'].forEach(function(k){
+    document.getElementById('dot-'+k).classList.toggle('sel',k===th);
+    document.getElementById('lbl-'+k).classList.toggle('active',k===th);
+  });
+}
+
+function setBri(v){
+  document.getElementById('bri-fill').style.width=v+'%';
+  document.getElementById('bri-thumb').style.left=v+'%';
+}
+</script>
+</body>
+</html>
+
